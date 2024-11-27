@@ -39,6 +39,10 @@
             opacity: 0.7;
         }
 
+        .animated-background::after {
+            animation-duration: 20s;
+            animation-delay: 5s;
+        }
 
         @keyframes move {
             0% {
@@ -61,11 +65,9 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            animation: fadeInUp 1s ease-out, slideIn 0.8s ease;
-            opacity: 0;
-            transform: translateY(50px);
+            transition: transform 0.8s ease-in-out, background-color 0.8s ease;
+            animation: fadeIn 2s ease;
             scroll-snap-align: start;
-            transition: transform 1s ease, opacity 1s ease;
         }
 
         .page h1 {
@@ -85,17 +87,6 @@
                 transform: translateY(50px);
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -428,84 +419,81 @@
             </div>
         </div>
     </div>
-    <script>
-        function checkCode() {
-            const inputs = document.querySelectorAll('.codeBox');
-            const code = Array.from(inputs).map((input) => input.value).join('');
-            if (code === "270824") {
-                document.querySelector('.lock-screen').style.display = 'none';
-                setTimeout(() => {
-                    document.getElementById('pages').style.transform = 'translateY(0)';
-                }, 300);
-            } else {
-                alert("Incorrect code! Please try again.");
-            }
+ <script>
+    function checkCode() {
+        const inputs = document.querySelectorAll('.codeBox');
+        const code = Array.from(inputs).map((input) => input.value).join('');
+        if (code === "270824") {
+            document.querySelector('.lock-screen').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('pages').style.transform = 'translateY(0)';
+            }, 300);
+        } else {
+            alert("Incorrect code! Please try again.");
         }
+    }
 
-        let currentPage = 0; // หน้าปัจจุบัน
-        const pages = document.querySelectorAll('.page'); // ดึงทุกหน้า
-        const totalPages = pages.length; // จำนวนหน้าทั้งหมด
-        let isScrolling = false; // ตัวแปรป้องกันการเลื่อนซ้ำซ้อน
+    let currentPage = 0; // หน้าปัจจุบัน
+    const pages = document.querySelectorAll('.page'); // ดึงทุกหน้า
+    const totalPages = pages.length; // จำนวนหน้าทั้งหมด
+    let isScrolling = false; // ตัวแปรป้องกันการเลื่อนซ้ำซ้อน
 
-        // ฟังก์ชันเลื่อนไปยังหน้าที่กำหนด
-        function goToPage(index) {
-            if (isScrolling) return;
-            isScrolling = true;
-            const direction = index > currentPage ? 'next' : 'previous';
+    // ฟังก์ชันเลื่อนไปยังหน้าที่กำหนด
+    function goToPage(index) {
+        if (index >= 0 && index < pages.length && !isScrolling) {
+            isScrolling = true; // ล็อกการเลื่อน
             currentPage = index;
-            pages.forEach((page, i) => {
-                page.style.transform = `translateY(${(i - currentPage) * 100}%)`;
-                page.style.opacity = i === currentPage ? 1 : 0;
-            });
-                // ปลดล็อกหลังเลื่อนเสร็จ
-                setTimeout(() => {
-                    isScrolling = false;
-                }, 1000); // เวลาตรงนี้ควรใกล้เคียงระยะเวลา smooth scroll
-            }
-        
+            pages[index].scrollIntoView({ behavior: 'smooth' }); // เลื่อนแบบ smooth
 
-        // Scroll Event (Mouse & Wheel)
-        window.addEventListener('wheel', (e) => {
-            if (isScrolling) return; // ถ้ากำลังเลื่อนอยู่ให้ข้าม
+            // ปลดล็อกหลังเลื่อนเสร็จ
+            setTimeout(() => {
+                isScrolling = false;
+            }, 700); // เวลาตรงนี้ควรใกล้เคียงระยะเวลา smooth scroll
+        }
+    }
 
-            if (e.deltaY > 0 && currentPage < totalPages - 1) {
+    // Scroll Event (Mouse & Wheel)
+    window.addEventListener('wheel', (e) => {
+        if (isScrolling) return; // ถ้ากำลังเลื่อนอยู่ให้ข้าม
+
+        if (e.deltaY > 0 && currentPage < totalPages - 1) {
+            goToPage(currentPage + 1); // เลื่อนไปหน้าถัดไป
+        } else if (e.deltaY < 0 && currentPage > 0) {
+            goToPage(currentPage - 1); // เลื่อนกลับหน้าก่อนหน้า
+        }
+    });
+
+    // Touch Events for Mobile/Tablet
+    let startY = 0;
+    let currentY = 0;
+
+    window.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY; // เก็บตำแหน่ง Y เริ่มต้น
+    });
+
+    window.addEventListener('touchend', (e) => {
+        currentY = e.changedTouches[0].clientY; // เก็บตำแหน่ง Y สุดท้าย
+        const deltaY = startY - currentY;
+
+        if (Math.abs(deltaY) > 50 && !isScrolling) { // เงื่อนไขป้องกันการเลื่อนซ้ำ
+            if (deltaY > 0 && currentPage < totalPages - 1) {
                 goToPage(currentPage + 1); // เลื่อนไปหน้าถัดไป
-            } else if (e.deltaY < 0 && currentPage > 0) {
+            } else if (deltaY < 0 && currentPage > 0) {
                 goToPage(currentPage - 1); // เลื่อนกลับหน้าก่อนหน้า
             }
-        });
+        }
+    });
 
-        // Touch Events for Mobile/Tablet
-        let startY = 0;
-        let currentY = 0;
-
-        window.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY; // เก็บตำแหน่ง Y เริ่มต้น
-        });
-
-        window.addEventListener('touchend', (e) => {
-            currentY = e.changedTouches[0].clientY; // เก็บตำแหน่ง Y สุดท้าย
-            const deltaY = startY - currentY;
-
-            if (Math.abs(deltaY) > 50 && !isScrolling) { // เงื่อนไขป้องกันการเลื่อนซ้ำ
-                if (deltaY > 0 && currentPage < totalPages - 1) {
-                    goToPage(currentPage + 1); // เลื่อนไปหน้าถัดไป
-                } else if (deltaY < 0 && currentPage > 0) {
-                    goToPage(currentPage - 1); // เลื่อนกลับหน้าก่อนหน้า
-                }
+    // ปรับ Transition ให้เหมาะสม
+    pages.forEach((page, index) => {
+        page.addEventListener('transitionend', () => {
+            if (currentPage === index) {
+                page.classList.remove('active');
             }
         });
+    });
 
-        // ปรับ Transition ให้เหมาะสม
-        pages.forEach((page, index) => {
-            page.addEventListener('transitionend', () => {
-                if (currentPage === index) {
-                    page.classList.remove('active');
-                }
-            });
-        });
-
-    </script>
+</script>
 
 </body>
 
